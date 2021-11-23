@@ -33,41 +33,55 @@ namespace ARSandbox
         public FireSimulation.FireSimulation FireSimulation;
         public TopographyBuilder.TopographyBuilder TopographyBuilder;
         public WindSimulation.WindSimulation WindSimulation;
+        public AnnotationsManager LineDrawer;
 
         private GameObject CurrentMode;
 
         public void EnableWindSimulation()
         {
             WindSimulation.gameObject.SetActive(true);
+            LineDrawer.gameObject.SetActive(true);
             CurrentMode = WindSimulation.gameObject;
         }
         public void EnableTopographyBuilder()
         {
             TopographyBuilder.gameObject.SetActive(true);
+            LineDrawer.gameObject.SetActive(true);
             CurrentMode = TopographyBuilder.gameObject;
         }
         public void EnableGeologySimulation()
         {
             GeologySimulation.gameObject.SetActive(true);
+            LineDrawer.gameObject.SetActive(true);
             CurrentMode = GeologySimulation.gameObject;
         }
         public void EnableWaterSimulation()
         {
             WaterSimulation.gameObject.SetActive(true);
+            LineDrawer.gameObject.SetActive(true);
             CurrentMode = WaterSimulation.gameObject;
         }
         public void EnableFireSimulation()
         {
             FireSimulation.gameObject.SetActive(true);
+            LineDrawer.gameObject.SetActive(true);
             CurrentMode = FireSimulation.gameObject;
         }
         public void DisableCurrentMode()
         {
-            if (CurrentMode != null) CurrentMode.gameObject.SetActive(false);
+            if (CurrentMode != null)
+            {
+                LineDrawer.gameObject.SetActive(false);
+                CurrentMode.gameObject.SetActive(false);
+            }
         }
         public void EnableCurrentMode()
         {
-            if (CurrentMode != null) CurrentMode.gameObject.SetActive(true);
+            if (CurrentMode != null)
+            {
+                LineDrawer.gameObject.SetActive(true);
+                CurrentMode.gameObject.SetActive(true);
+            }
         }
     }
 }

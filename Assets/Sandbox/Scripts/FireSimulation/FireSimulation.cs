@@ -122,27 +122,30 @@ namespace ARSandbox.FireSimulation
         }
         private void OnGesturesReady()
         {
-            List<CSS_FireStartPoint> firePoints = new List<CSS_FireStartPoint>();
-            foreach (HandInputGesture gesture in HandInput.GetCurrentGestures())
+            if (AnnotationsManager.canDrawAnnotations == false)
             {
-                if (!gesture.OutOfBounds)
+                List<CSS_FireStartPoint> firePoints = new List<CSS_FireStartPoint>();
+                foreach (HandInputGesture gesture in HandInput.GetCurrentGestures())
                 {
-                    CSS_FireStartPoint fireStartPoint;
-                    Vector2 gestureNormPos = gesture.NormalisedPosition;
-                    Point startPoint = new Point(Mathf.FloorToInt(gestureNormPos.x * fireSimSize.x), 
-                                                    Mathf.FloorToInt(gestureNormPos.y * fireSimSize.y));
-                    fireStartPoint.Position = startPoint;
-                    fireStartPoint.Radius = 1;
+                    if (!gesture.OutOfBounds)
+                    {
+                        CSS_FireStartPoint fireStartPoint;
+                        Vector2 gestureNormPos = gesture.NormalisedPosition;
+                        Point startPoint = new Point(Mathf.FloorToInt(gestureNormPos.x * fireSimSize.x),
+                                                        Mathf.FloorToInt(gestureNormPos.y * fireSimSize.y));
+                        fireStartPoint.Position = startPoint;
+                        fireStartPoint.Radius = 1;
 
-                    firePoints.Add(fireStartPoint);
+                        firePoints.Add(fireStartPoint);
+                    }
                 }
-            }
-            if (firePoints.Count > 0)
-            {
-                CSS_FireStartPoint[] firePointArr = firePoints.ToArray();
-                FireSimulationCSHelper.Run_StartFire(FireSimulationShader, fireLandscapeRT_0, firePointArr);
-                FireSimulationCSHelper.Run_StartFire(FireSimulationShader, fireLandscapeRT_1, firePointArr);
-                FireSimulationCSHelper.Run_RasteriseFireSimulation(FireSimulationShader, fireLandscapeRT_0, fireRasterisedRT, fireCellMaterials);
+                if (firePoints.Count > 0)
+                {
+                    CSS_FireStartPoint[] firePointArr = firePoints.ToArray();
+                    FireSimulationCSHelper.Run_StartFire(FireSimulationShader, fireLandscapeRT_0, firePointArr);
+                    FireSimulationCSHelper.Run_StartFire(FireSimulationShader, fireLandscapeRT_1, firePointArr);
+                    FireSimulationCSHelper.Run_RasteriseFireSimulation(FireSimulationShader, fireLandscapeRT_0, fireRasterisedRT, fireCellMaterials);
+                }
             }
         }
         private void CreateRenderTextures()
@@ -242,6 +245,9 @@ namespace ARSandbox.FireSimulation
         }
         private WindCoefficients CalculateWindCoefficients(float angleInDegrees, float amplitude)
         {
+            // Convert amplitude (windSpeed) from ms/s to km/h
+            amplitude = amplitude * 3.6f;
+
             float amplitudeCutoff = 0.2f;
             float angleInRads = angleInDegrees * Mathf.Deg2Rad;
             WindCoefficients coeff;

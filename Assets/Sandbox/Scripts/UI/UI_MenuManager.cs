@@ -37,6 +37,7 @@ namespace ARSandbox
         public UI_ConfirmationPanel UI_ConfirmationPanel;
         public UI_SandboxSettings UI_SandboxSettings;
         public UI_SharingMenu UI_SharingMenu;
+        public GameObject UI_AnnotationsMenu;
         public GameObject UI_WaterSimulation;
         public GameObject UI_GeologySimulation;
         public GameObject UI_FireSimulation;
@@ -72,6 +73,7 @@ namespace ARSandbox
             UI_ConfirmationPanel.gameObject.SetActive(false);
             UI_SandboxSettings.gameObject.SetActive(false);
             UI_SharingMenu.gameObject.SetActive(false);
+            UI_AnnotationsMenu.gameObject.SetActive(false);
             UI_WaterSimulation.SetActive(false);
             UI_GeologySimulation.SetActive(false);
             UI_FireSimulation.SetActive(false);
@@ -100,10 +102,12 @@ namespace ARSandbox
             UI_CalibrationExitButton.GetComponentInChildren<Button>().onClick.RemoveAllListeners();
             if (newActiveMenu == UI_MainMenu)
             {
+                UI_AnnotationsMenu.SetActive(false);
                 UI_CalibrationExitButton.GetComponentInChildren<Button>().onClick.AddListener(CalibrationManager.StartCalibration);
                 UI_CalibrationExitButton.GetComponentInChildren<Text>().text = "Start Calibration";
             } else
             {
+                UI_AnnotationsMenu.SetActive(true);
                 UI_CalibrationExitButton.GetComponentInChildren<Button>().onClick.AddListener(OpenMainMenu);
                 UI_CalibrationExitButton.GetComponentInChildren<Button>().onClick.AddListener(ModeSelector.DisableCurrentMode);
                 UI_CalibrationExitButton.GetComponentInChildren<Text>().text = "Exit Simulation";

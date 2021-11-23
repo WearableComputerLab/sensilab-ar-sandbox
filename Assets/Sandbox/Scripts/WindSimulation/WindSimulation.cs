@@ -143,12 +143,15 @@ namespace ARSandbox.WindSimulation {
 
         private void OnGesturesReady()
         {
-            foreach (HandInputGesture gesture in HandInput.GetCurrentGestures())
+            if (AnnotationsManager.canDrawAnnotations == false)
             {
-                if (!gesture.OutOfBounds)
+                foreach (HandInputGesture gesture in HandInput.GetCurrentGestures())
                 {
-                    ComputeShaderHelper.Run_AddPollutant(WindComputeShader, particleData_Buffer,
-                                            Random.value * 1000.0f, gesture.WorldPosition, 3.0f, totalParticles);
+                    if (!gesture.OutOfBounds)
+                    {
+                        ComputeShaderHelper.Run_AddPollutant(WindComputeShader, particleData_Buffer,
+                                                Random.value * 1000.0f, gesture.WorldPosition, 3.0f, totalParticles);
+                    }
                 }
             }
         }

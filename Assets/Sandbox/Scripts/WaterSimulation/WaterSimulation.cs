@@ -274,15 +274,18 @@ namespace ARSandbox.WaterSimulation
 
         private void OnGesturesReady()
         {
-            foreach (HandInputGesture gesture in HandInput.GetCurrentGestures())
+            if (AnnotationsManager.canDrawAnnotations == false)
             {
-                if (!gesture.OutOfBounds)
+                foreach (HandInputGesture gesture in HandInput.GetCurrentGestures())
                 {
-                    if (!Physics.CheckSphere(gesture.WorldPosition + new Vector3(0, 0, -5), 1.0f))
+                    if (!gesture.OutOfBounds)
                     {
-                        WaterDroplet waterDroplet = Instantiate(WaterDroplet, gesture.WorldPosition, Quaternion.identity);
-                        waterDroplet.SetShowMesh(showParticles);
-                        waterDroplets.Add(waterDroplet);
+                        if (!Physics.CheckSphere(gesture.WorldPosition + new Vector3(0, 0, -5), 1.0f))
+                        {
+                            WaterDroplet waterDroplet = Instantiate(WaterDroplet, gesture.WorldPosition, Quaternion.identity);
+                            waterDroplet.SetShowMesh(showParticles);
+                            waterDroplets.Add(waterDroplet);
+                        }
                     }
                 }
             }
