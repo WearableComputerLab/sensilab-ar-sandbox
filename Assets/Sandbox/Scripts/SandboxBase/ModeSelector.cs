@@ -33,7 +33,7 @@ namespace ARSandbox
         public FireSimulation.FireSimulation FireSimulation;
         public TopographyBuilder.TopographyBuilder TopographyBuilder;
         public WindSimulation.WindSimulation WindSimulation;
-        public AnnotationsManager LineDrawer;
+        public LineDrawingManager LineDrawer;
 
         private GameObject CurrentMode;
 

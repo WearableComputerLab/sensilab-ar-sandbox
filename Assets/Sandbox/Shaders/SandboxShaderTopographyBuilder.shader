@@ -52,6 +52,7 @@ Shader "Unlit/SandboxShaderTopographyBuilder"
 				float2 uv_HeightTex : TEXCOORD0;
 				float2 uv_LabelMaskTex : TEXCOORD1;
 				float2 uv_LoadedHeightTex : TEXCOORD2;
+				float2 uv_AnnotationsMaskTex : TEXCOORD3;
 				float4 vertex : SV_POSITION;
 			};
 
@@ -146,6 +147,7 @@ Shader "Unlit/SandboxShaderTopographyBuilder"
 				o.uv_HeightTex = TRANSFORM_TEX(UVBuffer[vIndex], _HeightTex);
 				o.uv_LabelMaskTex = TRANSFORM_TEX(UVBuffer[vIndex], _LabelMaskTex);
 				o.uv_LoadedHeightTex = TRANSFORM_TEX(UVBuffer[vIndex], _LoadedHeightTex);
+				o.uv_AnnotationsMaskTex = TRANSFORM_TEX(UVBuffer[vIndex], _AnnotationsMaskTex);
 
 				return o;
 			}

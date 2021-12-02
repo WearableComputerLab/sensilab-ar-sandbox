@@ -24,6 +24,7 @@
 #pragma kernel CS_StepFireSimulation
 #pragma kernel CS_RasteriseFireSimulation
 #pragma kernel CS_ResetLandscape
+#pragma kernel CS_StartAnnotation
 
 float3 mod289(float3 x) {
 	return x - floor(x * (1.0 / 289.0)) * 289.0;
@@ -146,7 +147,7 @@ SamplerState samplerSandboxDepthsRT
 };
 
 RWTexture2D<float4> PrevStepRT;
-
+RWTexture2D<float4> AnnotationsRT;
 float4 WindCoefficients0;
 #define Wind_N		(WindCoefficients0.x)
 #define Wind_E		(WindCoefficients0.y)
@@ -294,13 +295,21 @@ void CS_StepFireSimulation (uint3 id : SV_DispatchThreadID)
 	FireCellMaterial fireCellMat = FireCellMaterialsBuffer[materialIndex];
 
 	float burnRate = fireCellMat.BurnRate + fireCell.b;
-	burnRate = clamp(burnRate, 0.01, 1000);
+	burnRate = clamp(burnRate, 0.01, 1000);	
 
 	float closeNeighbours = (fV_N + fV_E + fV_S + fV_W) / 4.0 * burnRate;
 	float farNeighbours = (fV_NE + fV_NW + fV_SE + fV_SW) / 4.0 * burnRate;
 	float fireValue = fireCell.r * 1.1 + closeNeighbours + 0.83 * farNeighbours;
 	fireValue = clamp(fireValue, 0.0, 1.0);
 
+	float4 annotation = AnnotationsRT[cellPos];
+	if (annotation.r != 0) {
+		if (annotation.g != 0) {
+			if (annotation.g != 0) {
+				fireValue = 0;
+			}
+		}
+	}
 	if (fireValue < 0.0001) fireValue = 0;
 	fireCell.r = fireValue;
 
@@ -312,6 +321,8 @@ void CS_StepFireSimulation (uint3 id : SV_DispatchThreadID)
 	if (fireCell.a <= 0) {
 		fireCell.r = 0;
 	}
+	
+	
 	FireLandscapeRT[cellPos] = fireCell;
 }
 
@@ -344,6 +355,37 @@ void CS_StartFire (uint3 id : SV_DispatchThreadID)
 		}
 	}
 }
+
+
+// Start Fire compute shader ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// Structs
+struct AnnotationPoint {
+	int2 Position;
+	int Radius;
+};
+
+// Inputs
+StructuredBuffer<AnnotationPoint> AnnotationPointBuffer;
+int TotalAnnotationPoints;
+
+// Outputs
+// FireLandscapeRT
+[numthreads(16,16,1)]
+void CS_StartAnnotation(uint3 id : SV_DispatchThreadID)
+{
+	float4 fireCell = FireLandscapeRT[id.xy];
+
+	for (int i = 0; i < TotalAnnotationPoints; i++) {
+		AnnotationPoint annotationPoint = AnnotationPointBuffer[i];
+		float xDelta = annotationPoint.Position.x - (int)id.x;
+		float yDelta = annotationPoint.Position.y - (int)id.y;
+		float dist = sqrt(xDelta*xDelta + yDelta*yDelta);
+		if (dist <= 10) {
+			FireLandscapeRT[id.xy] = float4(1,1,1,1);
+		}
+	}
+}
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 // Fill Rendertexture compute shader
 // Inputs

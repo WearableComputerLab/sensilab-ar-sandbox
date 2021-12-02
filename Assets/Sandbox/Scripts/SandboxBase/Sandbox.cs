@@ -21,6 +21,7 @@
 
 using System;
 using UnityEngine;
+using UnityEngine.UI;
 using Windows.Kinect;
 
 namespace ARSandbox
@@ -56,7 +57,7 @@ namespace ARSandbox
         public Texture2D ColourScaleTexture;
         public SandboxDataCamera SandboxDataCamera;
         public TopographyLabelManager TopographyTextHandler;
-
+        public Image PlayPauseDepthImage;
         public Vector2 MESH_XY_STRIDE_DS1 { get; private set; }
         public Vector2 MESH_XY_STRIDE_DS2 { get; private set; }
         public Vector2 MESH_XY_STRIDE_DS3 { get; private set; }
@@ -114,6 +115,7 @@ namespace ARSandbox
         private ComputeBuffer collMeshVertices_Buffer, collMeshUV_Buffer, collMeshTris_Buffer;
 
         private Texture TopographyLabelMaskTex;
+        public Texture AnnotationsMaskTex { get; private set; }
 
         private Vector3[] collMeshVertices;
         private int[] collMeshTris;
@@ -121,6 +123,8 @@ namespace ARSandbox
 
         private byte[] rawDepthData;
         public ushort[] depthDataBuffer { get; private set; }
+
+        private bool shouldLoadDepthData = true;
 
         private void Start()
         {
@@ -143,7 +147,14 @@ namespace ARSandbox
             DepthDataMaterial = meshRenderer.materials[1];
             ContourDataMaterial = meshRenderer.materials[2];
             BlackAndWhiteMaterial = meshRenderer.materials[3];
+
+            // Set depth capture icon
+            Texture2D icon = Resources.Load("Pause") as Texture2D;
+            Sprite sprite = Sprite.Create(icon, new Rect(0, 0, icon.width, icon.height), new Vector2(0, 0));
+            PlayPauseDepthImage.sprite = sprite;
         }
+        
+        
 
         private void Update()
         {
@@ -279,6 +290,11 @@ namespace ARSandbox
         {
             TopographyLabelMaskTex = labelMaskRT;
         }
+        
+        public void SetAnnotationsMaskRT(Texture annotationsMaskRT)
+        {
+            AnnotationsMaskTex = annotationsMaskRT;
+        }
         public void SetDefaultShader()
         {
             if (meshRenderer != null)
@@ -303,6 +319,7 @@ namespace ARSandbox
             material.SetTexture("_HeightTex", CurrentDepthTexture);
             material.SetTexture("_ColorScaleTex", ColourScaleTexture);
             material.SetTexture("_LabelMaskTex", TopographyLabelMaskTex);
+            material.SetTexture("_AnnotationsMaskTex", AnnotationsMaskTex);
             material.SetInt("_DynamicLabelColouring", DynamicLabelColouring ? 1 : 0);
         }
         public void UI_ChangeDynamicLabelColouring(bool dynamicLabelColouring)
@@ -434,6 +451,22 @@ namespace ARSandbox
                 return -1;
             }
             return collMeshVertices[index].z;
+        }
+        public void UI_ToggleShouldLoadDepthData()
+        {
+            shouldLoadDepthData = !shouldLoadDepthData;
+
+            // Set play/pause icon
+            Texture2D icon;
+            if (shouldLoadDepthData)
+            {
+                icon = Resources.Load("Pause") as Texture2D;
+            } else
+            {
+                icon = Resources.Load("Play") as Texture2D;
+            }
+            Sprite sprite = Sprite.Create(icon, new Rect(0, 0, icon.width, icon.height), new Vector2(0, 0));
+            PlayPauseDepthImage.sprite = sprite;
         }
         private void OnCalibration()
         {
@@ -659,8 +692,12 @@ namespace ARSandbox
         {
             if (KinectManager.NewDataReady())
             {
-                depthDataBuffer = KinectManager.GetCurrentData();
-                UpdateRawTexture();
+                // Loading depth data not paused
+                if (shouldLoadDepthData)
+                {
+                    depthDataBuffer = KinectManager.GetCurrentData();
+                    UpdateRawTexture();
+                }
                 ProcessSandboxData();
 
                 if (OnNewProcessedData != null) OnNewProcessedData();

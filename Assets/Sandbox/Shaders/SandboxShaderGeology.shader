@@ -26,6 +26,7 @@ Shader "Unlit/SandboxShaderGeology"
 		_HeightTex("Height Texture", 2D) = "white" {}
 		_ColorScaleTex("Color Texture", 2D) = "white" {}
 		_LabelMaskTex("Label Mask Texture", 2D) = "white" {}
+		_AnnotationsMaskTex("Annotations Mask Texture", 2D) = "white" {}
 		_GeologySurfaceTex("Geology Texture", 2D) = "white" {}
 		_ContourStride("Contour Stride (mm)", float) = 20
 		_ContourWidth("Contour Width", float) = 1
@@ -52,6 +53,7 @@ Shader "Unlit/SandboxShaderGeology"
 				float2 uv_HeightTex : TEXCOORD0;
 				float2 uv_LabelMaskTex : TEXCOORD1;
 				float2 uv_GeologySurfaceTex: TEXCOORD2;
+				float2 uv_AnnotationsMaskTex: TEXCOORD3;
 				float4 vertex : SV_POSITION;
 			};
 
@@ -70,6 +72,7 @@ Shader "Unlit/SandboxShaderGeology"
 				o.uv_LabelMaskTex = TRANSFORM_TEX(UVBuffer[vIndex], _LabelMaskTex);
 
 				o.uv_GeologySurfaceTex = TRANSFORM_TEX(UVBuffer[vIndex], _GeologySurfaceTex);
+				o.uv_AnnotationsMaskTex = TRANSFORM_TEX(UVBuffer[vIndex], _AnnotationsMaskTex);
 
 				return o;
 			}
@@ -96,6 +99,8 @@ Shader "Unlit/SandboxShaderGeology"
 				finalColor = drawMinorContourLine == 1 ? minorContourColour : finalColor;
 				finalColor = contourMapFrag.onText == 1 ? textColor : finalColor;
 
+				fixed4 annotationColor = tex2D(_AnnotationsMaskTex, i.uv_AnnotationsMaskTex);
+				finalColor = contourMapFrag.onAnnotation == 1 ? annotationColor : finalColor;
 				return finalColor;
 			}
 			ENDCG

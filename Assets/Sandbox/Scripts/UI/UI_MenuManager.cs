@@ -31,6 +31,7 @@ namespace ARSandbox
     {
         public CalibrationManager CalibrationManager;
         public ModeSelector ModeSelector;
+        public FieldOfViewManager FieldOfViewManager;
 
         public GameObject UI_MainMenu;
         public GameObject UI_CalibrationMenu;
@@ -87,6 +88,7 @@ namespace ARSandbox
 
             CalibrationManager.OnCalibration += OnCalibration;
             CalibrationManager.OnCalibrationComplete += OnCalibrationComplete;
+            FieldOfViewManager.canDraw = true;
 
             initialCalibrationComplete = false;
         }
@@ -105,12 +107,15 @@ namespace ARSandbox
                 UI_AnnotationsMenu.SetActive(false);
                 UI_CalibrationExitButton.GetComponentInChildren<Button>().onClick.AddListener(CalibrationManager.StartCalibration);
                 UI_CalibrationExitButton.GetComponentInChildren<Text>().text = "Start Calibration";
+                FieldOfViewManager.canDraw = true;
             } else
             {
                 UI_AnnotationsMenu.SetActive(true);
                 UI_CalibrationExitButton.GetComponentInChildren<Button>().onClick.AddListener(OpenMainMenu);
                 UI_CalibrationExitButton.GetComponentInChildren<Button>().onClick.AddListener(ModeSelector.DisableCurrentMode);
                 UI_CalibrationExitButton.GetComponentInChildren<Text>().text = "Exit Simulation";
+                FieldOfViewManager.canDraw = false;
+                FieldOfViewManager.UI_DestroyFOVs();
             }
         }
 

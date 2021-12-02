@@ -29,16 +29,25 @@ namespace ARSandbox.FireSimulation
     public class UI_FireSimulationMenu : MonoBehaviour
     {
         public FireSimulation FireSimulation;
+        public LineDrawingManager LineDrawingManager;
+        public GameObject UI_FireOptionMenu;
+        public GameObject UI_FireBreakMenu;
         public UI_Dial UI_WindDirectionDial;
         public Slider UI_WindSpeedSlider;
         public Text UI_PlayPauseBtnText;
         public Slider UI_ZoomSlider;
+        public Slider UI_FireBreakThicknessSlider;
+        public GameObject UI_FireOptionMenuBtn;
+        public GameObject UI_FireBreakMenuBtn;
 
         public void OpenMenu()
         {
+            UI_FireOptionMenu.SetActive(true);
+            UI_FireBreakMenu.SetActive(false);
             UI_WindDirectionDial.SetDialRotation(FireSimulation.WindDirection, false);
             UI_WindSpeedSlider.value = FireSimulation.WindSpeed;
             UI_ZoomSlider.value = FireSimulation.LandscapeZoom;
+            UI_FireBreakThicknessSlider.value = LineDrawingManager.FireBreakThickness;
 
             if (FireSimulation.SimulationPaused)
             {
@@ -60,6 +69,12 @@ namespace ARSandbox.FireSimulation
             {
                 UI_PlayPauseBtnText.text = "Pause Simulation";
             }
+        }
+
+        public void UI_OpenFireBreakMenu()
+        {
+            UI_FireOptionMenu.SetActive(false);
+            UI_FireBreakMenu.SetActive(true);
         }
     }
 }

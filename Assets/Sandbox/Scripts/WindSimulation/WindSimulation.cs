@@ -143,7 +143,7 @@ namespace ARSandbox.WindSimulation {
 
         private void OnGesturesReady()
         {
-            if (AnnotationsManager.canDrawAnnotations == false)
+            if (LineDrawingManager.CanDrawAnnotations == false)
             {
                 foreach (HandInputGesture gesture in HandInput.GetCurrentGestures())
                 {

@@ -30,6 +30,11 @@ namespace ARSandbox.FireSimulation
         public Point Position;
         public int Radius;
     }
+    public struct CSS_AnnotationPoint
+    {
+        public Point Position;
+        public int Radius;
+    }
 
     public struct CSS_FireCellMaterial
     {
@@ -64,6 +69,7 @@ namespace ARSandbox.FireSimulation
         public const string CS_STEP_FIRE_SIMULATION = "CS_StepFireSimulation";
         public const string CS_RASTERISE_FIRE_SIMULATION = "CS_RasteriseFireSimulation";
         public const string CS_RESET_LANDSCAPE = "CS_ResetLandscape";
+        public const string CS_START_ANNOTATION = "CS_StartAnnotation";
 
         public static readonly Point CS_GENERATE_LANDSCAPE_THREADS = new Point(16, 16);
         public static readonly Point CS_START_FIRE_THREADS = new Point(16, 16);
@@ -96,12 +102,18 @@ namespace ARSandbox.FireSimulation
 
         public static void Run_StepFireSimulation(ComputeShader fireSimulationShader, RenderTexture sandboxDepthsRT, RenderTexture prevStepRT,
                                                     RenderTexture nextStepRT, CSS_FireCellMaterial[] fireCellMaterials,
-                                                    WindCoefficients windCoefficients, float sizeFactor)
+                                                    WindCoefficients windCoefficients, float sizeFactor, Texture annotationsTexture)
         {
             int kernelHandle = fireSimulationShader.FindKernel(CS_STEP_FIRE_SIMULATION);
             fireSimulationShader.SetTexture(kernelHandle, "SandboxDepthsRT", sandboxDepthsRT);
             fireSimulationShader.SetTexture(kernelHandle, "PrevStepRT", prevStepRT);
             fireSimulationShader.SetTexture(kernelHandle, "FireLandscapeRT", nextStepRT);
+            RenderTexture annotationsRT;
+            annotationsRT = new RenderTexture(prevStepRT.width, prevStepRT.height, 0);
+            annotationsRT.enableRandomWrite = true;
+            annotationsRT.Create();
+            Graphics.Blit(annotationsTexture, annotationsRT);
+            fireSimulationShader.SetTexture(kernelHandle, "AnnotationsRT", annotationsRT);
 
             int texSizeX = nextStepRT.width;
             int texSizeY = nextStepRT.height;
@@ -147,6 +159,27 @@ namespace ARSandbox.FireSimulation
             fireSimulationShader.Dispatch(kernelHandle, threadsToRun.x, threadsToRun.y, 1);
 
             fireStartPointBuffer.Dispose();
+        }
+        public static void Run_StartAnnotation(ComputeShader fireSimulationShader, RenderTexture fireLandscapeRT,
+                                            CSS_AnnotationPoint[] annotationPoints)
+        {
+            int kernelHandle = fireSimulationShader.FindKernel(CS_START_ANNOTATION);
+            fireSimulationShader.SetTexture(kernelHandle, "FireLandscapeRT", fireLandscapeRT);
+
+            int texSizeX = fireLandscapeRT.width;
+            int texSizeY = fireLandscapeRT.height;
+            int[] textureSize = new int[2] { texSizeX, texSizeY };
+            fireSimulationShader.SetInts("FireLandscapeSize", textureSize);
+
+            ComputeBuffer annotationPointsBuffer = new ComputeBuffer(annotationPoints.Length, (int)StructSizes.FIRE_START_POINT_SIZE);
+            annotationPointsBuffer.SetData(annotationPoints);
+            fireSimulationShader.SetBuffer(kernelHandle, "AnnotationPointBuffer", annotationPointsBuffer);
+            fireSimulationShader.SetInt("TotalAnnotationPoints", annotationPoints.Length);
+
+            Point threadsToRun = ComputeShaderHelpers.CalculateThreadsToRun(new Point(texSizeX, texSizeY), CS_START_FIRE_THREADS);
+            fireSimulationShader.Dispatch(kernelHandle, threadsToRun.x, threadsToRun.y, 1);
+
+            annotationPointsBuffer.Dispose();
         }
 
         public static void Run_GenerateLandscape(ComputeShader fireSimulationShader, RenderTexture fireLandscapeRT, float randomSeedOffset, float landscapeZoom)

@@ -32,6 +32,7 @@ namespace ARSandbox.FireSimulation
         public CalibrationManager CalibrationManager;
         public Shader FireVisualShader;
         public ComputeShader FireSimulationShader;
+        public Camera FireBreakMaskCamera;
 
         private Point fireSimSize = new Point(1920, 1080);
         private RenderTexture fireRasterisedRT;
@@ -51,6 +52,9 @@ namespace ARSandbox.FireSimulation
         private bool FirstRun = true;
 
         private IEnumerator RunSimulationCoroutine;
+
+        private RenderTexture fireBreakMaskRT;
+        private Texture fireBreakMaskTex;
         private void InitialiseSimulation()
         {
             sandboxDescriptor = Sandbox.GetSandboxDescriptor();
@@ -91,7 +95,7 @@ namespace ARSandbox.FireSimulation
         {
             HandInput.OnGesturesReady += OnGesturesReady;
             CalibrationManager.OnCalibration += OnCalibration;
-
+            CalibrationManager.SetUpDataCamera(FireBreakMaskCamera);            
             InitialiseSimulation();
         }
         private void OnDisable()
@@ -107,8 +111,8 @@ namespace ARSandbox.FireSimulation
         }
         private void OnCalibration()
         {
-            HandInput.OnGesturesReady -= OnGesturesReady;
             Sandbox.OnSandboxReady += OnSandboxReady;
+            HandInput.OnGesturesReady -= OnGesturesReady;
 
             DisposeRenderTextures();
             StopCoroutine(RunSimulationCoroutine);
@@ -117,12 +121,12 @@ namespace ARSandbox.FireSimulation
         private void OnSandboxReady()
         {
             HandInput.OnGesturesReady += OnGesturesReady;
-
-            InitialiseSimulation();
+            
+            InitialiseSimulation(); 
         }
         private void OnGesturesReady()
         {
-            if (AnnotationsManager.canDrawAnnotations == false)
+            if (!LineDrawingManager.CanDrawAnnotations && !LineDrawingManager.CanDrawFireBreak)
             {
                 List<CSS_FireStartPoint> firePoints = new List<CSS_FireStartPoint>();
                 foreach (HandInputGesture gesture in HandInput.GetCurrentGestures())
@@ -164,6 +168,10 @@ namespace ARSandbox.FireSimulation
             fireLandscapeRT_1.enableRandomWrite = true;
             fireLandscapeRT_1.filterMode = FilterMode.Point;
             fireLandscapeRT_1.Create();
+
+            CreateFireBreakMaskRT();
+            FireBreakMaskCamera.targetTexture = fireBreakMaskRT;
+            fireBreakMaskTex = fireBreakMaskRT;
         }
         private void DisposeRenderTextures()
         {
@@ -181,6 +189,10 @@ namespace ARSandbox.FireSimulation
             {
                 fireLandscapeRT_1.Release();
                 fireLandscapeRT_1 = null;
+            }
+            if (fireBreakMaskRT != null)
+            {
+                fireBreakMaskRT = null;
             }
         }
         private void CreateFireCellMaterials()
@@ -227,14 +239,14 @@ namespace ARSandbox.FireSimulation
                     {
                         FireSimulationCSHelper.Run_StepFireSimulation(FireSimulationShader, sandboxDescriptor.ProcessedDepthsRT, fireLandscapeRT_1, fireLandscapeRT_0,
                                                                         fireCellMaterials, CalculateWindCoefficients(WindDirection, WindSpeed),
-                                                                        TrueZoom);
+                                                                        TrueZoom, fireBreakMaskTex);
                         FireSimulationCSHelper.Run_RasteriseFireSimulation(FireSimulationShader, fireLandscapeRT_0, fireRasterisedRT, fireCellMaterials);
                     }
                     else
                     {
                         FireSimulationCSHelper.Run_StepFireSimulation(FireSimulationShader, sandboxDescriptor.ProcessedDepthsRT, fireLandscapeRT_0, fireLandscapeRT_1,
                                                                         fireCellMaterials, CalculateWindCoefficients(WindDirection, WindSpeed),
-                                                                        TrueZoom);
+                                                                        TrueZoom, fireBreakMaskTex);
                         FireSimulationCSHelper.Run_RasteriseFireSimulation(FireSimulationShader, fireLandscapeRT_1, fireRasterisedRT, fireCellMaterials);
                     }
                     swapBuffers = !swapBuffers;
@@ -312,6 +324,16 @@ namespace ARSandbox.FireSimulation
         {
             SimulationPaused = !SimulationPaused;
             return SimulationPaused;
+        }
+        void CreateFireBreakMaskRT()
+        {
+            if (fireBreakMaskRT != null) fireBreakMaskRT.Release();
+            SandboxDescriptor sandboxDescriptor = Sandbox.GetSandboxDescriptor();
+            float aspectRatio = (float)sandboxDescriptor.DataSize.x / (float)sandboxDescriptor.DataSize.y;
+            Point maskRT_Size = new Point(Mathf.CeilToInt(1080 * aspectRatio), 1080);
+
+            fireBreakMaskRT = new RenderTexture(maskRT_Size.x, maskRT_Size.y, 0);
+            fireBreakMaskRT.Create();
         }
     }
 }

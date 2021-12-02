@@ -25,6 +25,7 @@ Shader "Unlit/SandboxShaderBlackAndWhite"
 	{
 		_HeightTex("Height Texture", 2D) = "white" {}
 		_LabelMaskTex("Label Mask Texture", 2D) = "white" {}
+		_AnnotationsMaskTex("Annotations Mask Texture", 2D) = "white" {}
 		_ContourStride("Contour Stride (mm)", float) = 20
 		_ContourWidth("Contour Width", float) = 1
 		_MinorContours("Minor Contours", float) = 0
@@ -48,6 +49,7 @@ Shader "Unlit/SandboxShaderBlackAndWhite"
 			{
 				float2 uv_HeightTex : TEXCOORD0;
 				float2 uv_LabelMaskTex : TEXCOORD1;
+				float2 uv_AnnotationsMaskTex : TEXCOORD2;
 				float4 vertex : SV_POSITION;
 			};
 
@@ -61,6 +63,7 @@ Shader "Unlit/SandboxShaderBlackAndWhite"
 				o.vertex = mul(UNITY_MATRIX_VP, mul(Mat_Object2World, float4(VertexBuffer[vIndex], 1.0f)));
 				o.uv_HeightTex = TRANSFORM_TEX(UVBuffer[vIndex], _HeightTex);
 				o.uv_LabelMaskTex = TRANSFORM_TEX(UVBuffer[vIndex], _LabelMaskTex);
+				o.uv_AnnotationsMaskTex = TRANSFORM_TEX(UVBuffer[vIndex], _AnnotationsMaskTex);
 
 				return o;
 			}

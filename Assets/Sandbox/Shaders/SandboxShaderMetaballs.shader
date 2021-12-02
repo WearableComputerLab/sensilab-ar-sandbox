@@ -27,6 +27,7 @@ Shader "Unlit/SandboxShaderMetaballs"
 		_ColorScaleTex("Color Texture", 2D) = "white" {}
 		_WaterColorTex("Water Color Texture", 2D) = "white" {}
 		_LabelMaskTex("Label Mask Texture", 2D) = "white" {}
+		_AnnotationsMaskTex("Annotations Mask Texture", 2D) = "white" {}
 		_MetaballTex("Metaball Texture", 2D) = "white" {}
 		_WaterSurfaceTex("Water Surface Texture", 2D) = "white" {}
 		_ContourStride("Contour Stride (mm)", float) = 20
@@ -55,6 +56,7 @@ Shader "Unlit/SandboxShaderMetaballs"
 				float2 uv_LabelMaskTex : TEXCOORD1;
 				float2 uv_MetaballTex : TEXCOORD2;
 				float2 uv_WaterSurfaceTex : TEXCOORD3;
+				float2 uv_AnnotationsMaskTex : TEXCOORD4;
 				float4 vertex : SV_POSITION;
 			};
 
@@ -78,6 +80,7 @@ Shader "Unlit/SandboxShaderMetaballs"
 				o.uv_LabelMaskTex = TRANSFORM_TEX(UVBuffer[vIndex], _LabelMaskTex);
 				o.uv_MetaballTex = TRANSFORM_TEX(UVBuffer[vIndex], _MetaballTex);
 				o.uv_WaterSurfaceTex = TRANSFORM_TEX(UVBuffer[vIndex], _WaterSurfaceTex);
+				o.uv_AnnotationsMaskTex = TRANSFORM_TEX(UVBuffer[vIndex], _AnnotationsMaskTex);
 
 				return o;
 			}
@@ -127,8 +130,11 @@ Shader "Unlit/SandboxShaderMetaballs"
 				fixed4 finalColor = drawMajorContourLine == 1 ? contrastColour : metaballColour;
 				finalColor = drawMinorContourLine == 1 ? minorContourColour : finalColor;
 				finalColor = contourMapFrag.onText == 1 ? textColor : finalColor;
+				finalColor = _DynamicLabelColouring ? finalColor : metaballColour;
 
-				return _DynamicLabelColouring ? finalColor : metaballColour;
+				fixed4 annotationColor = tex2D(_AnnotationsMaskTex, i.uv_AnnotationsMaskTex);
+				finalColor = contourMapFrag.onAnnotation == 1 ? annotationColor : finalColor;
+				return finalColor;
 			}
 			ENDCG
 		}

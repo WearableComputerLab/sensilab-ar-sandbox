@@ -36,7 +36,7 @@ namespace ARSandbox
         public Sandbox Sandbox;
         public CalibrationManager CalibrationManager;
         public TopographyLabel TopographyTextPrefab;
-        public Camera TopographyTextMaskCamera;
+        public Camera TopographyTextMaskCamera;        
         public ComputeShader SandboxCS;
         public SandboxContourCamera ContourCamera;
         public LayerMask LabelColliderMask;
@@ -100,13 +100,13 @@ namespace ARSandbox
         void OnSandboxReady()
         {
             sandboxDescriptor = Sandbox.GetSandboxDescriptor();
-            CalibrationManager.SetUpDataCamera(TopographyTextMaskCamera);
+            CalibrationManager.SetUpDataCamera(TopographyTextMaskCamera);           
 
             UpdateMaxElevationLevel();
 
             CreateMaskRT();
             TopographyTextMaskCamera.targetTexture = maskRT;
-            Sandbox.SetTopographyLabelMaskRT(maskRT);
+            Sandbox.SetTopographyLabelMaskRT(maskRT);            
 
             CreateContourRTs();
             ContourCamera.SetRenderTexture(contourRT);

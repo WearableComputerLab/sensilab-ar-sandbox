@@ -32,6 +32,7 @@ struct ContourMapFrag {
 	int onMajorContourLine;
 	int onText;
 	int onTextMask;
+	int onAnnotation;
 	float textIntensity;
 };
 
@@ -43,10 +44,12 @@ int MeshWidth;
 sampler2D _HeightTex;
 sampler2D _ColorScaleTex;
 sampler2D _LabelMaskTex;
+sampler2D _AnnotationsMaskTex;
 
 float4 _HeightTex_ST;
 float4 _ColorScaleTex_ST;
 float4 _LabelMaskTex_ST;
+float4 _AnnotationsMaskTex_ST;
 
 float _ContourStride;
 float _ContourWidth;
@@ -103,6 +106,9 @@ ContourMapFrag GetContourMap(v2f i) {
 	contourMapFrag.onText = maskSample.g != 0;
 	contourMapFrag.onTextMask = maskSample.r == 1;
 	contourMapFrag.textIntensity = maskSample.g;
+
+	float2 annotationsMaskSample = tex2D(_AnnotationsMaskTex, i.uv_AnnotationsMaskTex);
+	contourMapFrag.onAnnotation = annotationsMaskSample.g != 0;
 
 	return contourMapFrag;
 }
