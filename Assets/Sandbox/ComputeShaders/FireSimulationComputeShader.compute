@@ -20,6 +20,7 @@
 //
 
 #pragma kernel CS_GenerateLandscape
+//#pragma kernel CS_DrawLandscape
 #pragma kernel CS_StartFire
 #pragma kernel CS_StepFireSimulation
 #pragma kernel CS_RasteriseFireSimulation
@@ -38,7 +39,7 @@ float3 permute(float3 x) {
 	return mod289(((x*34.0)+1.0)*x);
 }
 
-float snoise(float2 v)
+ float snoise(float2 v)
 {
 	const float4 C = float4(0.211324865405187,  // (3.0-sqrt(3.0))/6.0
 						0.366025403784439,  // 0.5*(sqrt(3.0)-1.0)
@@ -130,7 +131,7 @@ void CS_RasteriseFireSimulation (uint3 id : SV_DispatchThreadID)
 		}
 	 else if (fireCell.r > 0) {
 		FireRasterisedRT[id.xy] = float4 (0.5f + fireCell.r / 0.1, 0.5f + fireCell.r / 0.1, 0, 1);
-	} else {
+    } else {
 		FireRasterisedRT[id.xy] = fireCellMat.Colour;
 	}
 }
@@ -398,7 +399,8 @@ float LandscapeZoom;
 // Shader
 [numthreads(16,16,1)]
 void CS_GenerateLandscape (uint3 id : SV_DispatchThreadID)
-{
+{ 
+    
 	float xIndex = (int)id.x - (int)FireLandscapeSize.x / 2.0;
 	float yIndex = (int)id.y - (int)FireLandscapeSize.y / 2.0;
 
@@ -413,14 +415,11 @@ void CS_GenerateLandscape (uint3 id : SV_DispatchThreadID)
 
 	float simplexNoise = (noiseSmall * 0.7 + noiseMedium * 0.2 + noiseLarge * 0.1) * 1;
 	simplexNoise = (1 + simplexNoise) / 2.0;
-	noiseMedium = (1 + noiseMedium) / 2.0;
-
-	int materialIndex;
-	materialIndex = 3 - floor(simplexNoise * 4);
-	
-	FireLandscapeRT[id.xy] = float4(0, materialIndex / 255.0, -0.05 + noiseVLarge * 0.1, 1);
+    int materialIndex;
+	materialIndex = 3 - floor(simplexNoise * 4);	
+    float4 fireCell = FireLandscapeRT[id.xy];    
+	FireLandscapeRT[id.xy] = float4(0, materialIndex/255.0, -0.05 + noiseVLarge * 0.1, 1);
 }
-
 // Reset Landscape compute shader
 // Inputs
 // FireLandscapeRT

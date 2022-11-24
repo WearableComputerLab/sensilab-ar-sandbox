@@ -65,13 +65,15 @@ namespace ARSandbox.FireSimulation
     public static class FireSimulationCSHelper
     {
         public const string CS_GENERATE_LANDSCAPE = "CS_GenerateLandscape";
+        public const string CS_DRAW_LANDSCAPE = "CS_DrawLandscape";
         public const string CS_START_FIRE = "CS_StartFire";
         public const string CS_STEP_FIRE_SIMULATION = "CS_StepFireSimulation";
         public const string CS_RASTERISE_FIRE_SIMULATION = "CS_RasteriseFireSimulation";
         public const string CS_RESET_LANDSCAPE = "CS_ResetLandscape";
         public const string CS_START_ANNOTATION = "CS_StartAnnotation";
 
-        public static readonly Point CS_GENERATE_LANDSCAPE_THREADS = new Point(16, 16);
+        public static readonly Point CS_GENERATE_LANDSCAPE_THREADS = new Point(10, 10);
+        public static readonly Point CS_DRAW_LANDSCAPE_THREADS = new Point(16, 16);
         public static readonly Point CS_START_FIRE_THREADS = new Point(16, 16);
         public static readonly Point CS_STEP_FIRE_SIMULATION_THREADS = new Point(16, 16);
         public static readonly Point CS_RASTERISE_FIRE_SIMULATION_THREADS = new Point(16, 16);
@@ -193,6 +195,22 @@ namespace ARSandbox.FireSimulation
             fireSimulationShader.SetInts("FireLandscapeSize", textureSize);
 
             fireSimulationShader.SetFloat("RandomSeedOffset", randomSeedOffset);
+            fireSimulationShader.SetFloat("LandscapeZoom", landscapeZoom);
+
+            Point threadsToRun = ComputeShaderHelpers.CalculateThreadsToRun(new Point(texSizeX, texSizeY), CS_GENERATE_LANDSCAPE_THREADS);
+            fireSimulationShader.Dispatch(kernelHandle, threadsToRun.x, threadsToRun.y, 1);
+        }
+
+        public static void Run_DrawLandscape(ComputeShader fireSimulationShader, RenderTexture fireLandscapeRT,  float landscapeZoom)
+        {
+            int kernelHandle = fireSimulationShader.FindKernel(CS_DRAW_LANDSCAPE);
+            fireSimulationShader.SetTexture(kernelHandle, "FireLandscapeRT", fireLandscapeRT);
+
+            int texSizeX = fireLandscapeRT.width;
+            int texSizeY = fireLandscapeRT.height;
+            int[] textureSize = new int[2] { texSizeX, texSizeY };
+            fireSimulationShader.SetInts("FireLandscapeSize", textureSize);
+          
             fireSimulationShader.SetFloat("LandscapeZoom", landscapeZoom);
 
             Point threadsToRun = ComputeShaderHelpers.CalculateThreadsToRun(new Point(texSizeX, texSizeY), CS_GENERATE_LANDSCAPE_THREADS);

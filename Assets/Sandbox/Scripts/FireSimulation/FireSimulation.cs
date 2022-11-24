@@ -35,11 +35,14 @@ namespace ARSandbox.FireSimulation
         public Camera FireBreakMaskCamera;
 
         private Point fireSimSize = new Point(1920, 1080);
-        private RenderTexture fireRasterisedRT;
-        private RenderTexture fireLandscapeRT_0;
-        private RenderTexture fireLandscapeRT_1;
+        public RenderTexture fireRasterisedRT;
+        public RenderTexture fireLandscapeRT_0;
+        public RenderTexture fireLandscapeRT_1;      
+        public RenderTexture testRT;
+        public GameObject quad;
         CSS_FireCellMaterial[] fireCellMaterials;
 
+        CSS_FireCellMaterial drawFireMaterial0 , drawFireMaterial3;
         private SandboxDescriptor sandboxDescriptor;
 
         private bool swapBuffers;
@@ -52,9 +55,22 @@ namespace ARSandbox.FireSimulation
         private bool FirstRun = true;
 
         private IEnumerator RunSimulationCoroutine;
-
         private RenderTexture fireBreakMaskRT;
         private Texture fireBreakMaskTex;
+     
+        private bool drawingFlora;
+
+       
+        private void Update()
+        {
+            if(drawingFlora)
+            {
+                if (Input.GetKeyDown(KeyCode.Space))
+                {
+                    
+                }
+            }
+        }
         private void InitialiseSimulation()
         {
             sandboxDescriptor = Sandbox.GetSandboxDescriptor();
@@ -73,7 +89,7 @@ namespace ARSandbox.FireSimulation
             float sandboxAspect = (float)sandboxDescriptor.DataSize.x / (float)sandboxDescriptor.DataSize.y;
             fireSimSize = new Point(Mathf.FloorToInt(sandboxAspect * 1080.0f), 1080);
 
-            DisposeRenderTextures();
+            DisposeRenderTextures();           
             CreateRenderTextures();
 
             GenerateLandscape();
@@ -86,10 +102,10 @@ namespace ARSandbox.FireSimulation
         }
         private void GenerateLandscape()
         {
-            TrueZoom = 2.4f * (1 / LandscapeZoom);
+            TrueZoom = 2.4f * (1 / LandscapeZoom);        
             FireSimulationCSHelper.Run_GenerateLandscape(FireSimulationShader, fireLandscapeRT_0, randomSeed, TrueZoom);
             FireSimulationCSHelper.Run_GenerateLandscape(FireSimulationShader, fireLandscapeRT_1, randomSeed, TrueZoom);
-            FireSimulationCSHelper.Run_RasteriseFireSimulation(FireSimulationShader, fireLandscapeRT_0, fireRasterisedRT, fireCellMaterials);
+            FireSimulationCSHelper.Run_RasteriseFireSimulation(FireSimulationShader, fireLandscapeRT_0, fireRasterisedRT, fireCellMaterials);        
         }
         private void OnEnable()
         {
@@ -126,7 +142,7 @@ namespace ARSandbox.FireSimulation
         }
         private void OnGesturesReady()
         {
-            if (!LineDrawingManager.CanDrawAnnotations && !LineDrawingManager.CanDrawFireBreak)
+            if (!LineDrawingManager.CanDrawAnnotations && !LineDrawingManager.CanDrawFireBreak && !drawingFlora)
             {
                 List<CSS_FireStartPoint> firePoints = new List<CSS_FireStartPoint>();
                 foreach (HandInputGesture gesture in HandInput.GetCurrentGestures())
@@ -151,6 +167,20 @@ namespace ARSandbox.FireSimulation
                     FireSimulationCSHelper.Run_RasteriseFireSimulation(FireSimulationShader, fireLandscapeRT_0, fireRasterisedRT, fireCellMaterials);
                 }
             }
+            if(drawingFlora)
+            {
+                foreach (HandInputGesture gesture in HandInput.GetCurrentGestures())
+                {
+                    if(!gesture.OutOfBounds)
+                    {
+                        Vector2 gestureNormPos = gesture.NormalisedPosition;
+                        Point drawPoint = new Point(Mathf.FloorToInt(gestureNormPos.x * fireSimSize.x),
+                                                        Mathf.FloorToInt(gestureNormPos.y * fireSimSize.y));
+
+                        
+                    }
+                }
+            }
         }
         private void CreateRenderTextures()
         {
@@ -168,7 +198,12 @@ namespace ARSandbox.FireSimulation
             fireLandscapeRT_1.enableRandomWrite = true;
             fireLandscapeRT_1.filterMode = FilterMode.Point;
             fireLandscapeRT_1.Create();
-
+///
+            testRT = new RenderTexture(fireSimSize.x, fireSimSize.y, 0, RenderTextureFormat.ARGBFloat);
+            testRT.enableRandomWrite = true;
+            testRT.filterMode = FilterMode.Point;
+            testRT.Create();
+///
             CreateFireBreakMaskRT();
             FireBreakMaskCamera.targetTexture = fireBreakMaskRT;
             fireBreakMaskTex = fireBreakMaskRT;
@@ -204,7 +239,7 @@ namespace ARSandbox.FireSimulation
             fireMaterial0.BurnoutTime = 60;
             fireMaterial0.Colour = new Color(0, 0.2f, 0, 1);
             fireMaterial0.BurntColour = new Color(0.1f, 0.1f, 0.1f, 1);
-
+           
             CSS_FireCellMaterial fireMaterial1;
             fireMaterial1.BurnRate = 0.2f;
             fireMaterial1.BurnoutTime = 40;
@@ -228,7 +263,7 @@ namespace ARSandbox.FireSimulation
             fireCellMaterials[2] = fireMaterial2;
             fireCellMaterials[3] = fireMaterial3;
         }
-
+        
         IEnumerator RunSimulation()
         {
             while (true)
@@ -311,9 +346,47 @@ namespace ARSandbox.FireSimulation
         public void UI_RandomiseFlora()
         {
             randomSeed = Random.value * 100000.0f;
-            GenerateLandscape();
-        }
+            CreateFireCellMaterials();
 
+
+            //for (int i = 50; i < 60; i++)
+            //{
+            //    PaintAtLocation(50, 50, 2);
+            //}
+
+             for (int i = 0; i < 10; i++)
+             {
+                 for (int y = 0; y < 10; y++)
+                 {
+                     PaintAtLocation(0 + i, 0+ y, 200);                  
+                 }
+             }
+            GenerateLandscape();
+
+        }
+        public void UI_DrawFlora()
+        {
+            UI_ResetLandscape();
+            drawingFlora = true;
+        }
+        public void UI_DoneDrawing()
+        {
+             fireCellMaterials = new CSS_FireCellMaterial[2];
+
+             drawFireMaterial0.BurnRate = 0.1f;
+             drawFireMaterial0.BurnoutTime = 60;
+             drawFireMaterial0.Colour = new Color(0, 0.2f, 0, 1);
+             drawFireMaterial0.BurntColour = new Color(0.1f, 0.1f, 0.1f, 1);
+
+             drawFireMaterial3.BurnRate = 0.6f;
+             drawFireMaterial3.BurnoutTime = 15;
+             drawFireMaterial3.Colour = new Color(0, 0.8f, 0, 1);
+             drawFireMaterial3.BurntColour = new Color(0.4f, 0.4f, 0.4f, 1);
+             fireCellMaterials[0] = drawFireMaterial0;
+             fireCellMaterials[1] = drawFireMaterial3;
+            
+            drawingFlora = false;
+        }
         public void UI_SetLandscapeZoom(float LandscapeZoom)
         {
             this.LandscapeZoom = LandscapeZoom;
@@ -334,6 +407,53 @@ namespace ARSandbox.FireSimulation
 
             fireBreakMaskRT = new RenderTexture(maskRT_Size.x, maskRT_Size.y, 0);
             fireBreakMaskRT.Create();
+        }
+        private void PaintAtLocation(int x, int y, int material = 0)
+        {
+            //fireLandscapeRT_0
+            //fireLandscapeRT_1
+
+            Texture2D texture = new Texture2D(fireLandscapeRT_0.width, fireLandscapeRT_0.height);
+            RenderTexture.active = fireLandscapeRT_0;
+            
+            //don't forget that you need to specify rendertexture before you call readpixels
+            //otherwise it will read screen pixels.
+            texture.ReadPixels(new Rect(0, 0, fireLandscapeRT_0.width, fireLandscapeRT_0.height), 0, 0);
+            
+            texture.SetPixel(x, y, new Color(0, material, texture.GetPixel(x, y).b), 1);
+            
+            //FireLandscapeRT[id.xy] = float4(0, materialIndex / 255.0, -0.05 + noiseVLarge * 0.1, 1);
+
+            texture.Apply();
+            Graphics.DrawTexture(new Rect(10, 10, 100, 100), texture);
+            quad.GetComponent<MeshRenderer>().material.mainTexture= texture;
+            RenderTexture.active = null;
+
+
+
+
+
+            Texture2D texture2 = new Texture2D(fireLandscapeRT_1.width, fireLandscapeRT_1.height);
+            RenderTexture.active = fireLandscapeRT_1;
+
+            //don't forget that you need to specify rendertexture before you call readpixels
+            //otherwise it will read screen pixels.
+            texture2.ReadPixels(new Rect(0, 0, fireLandscapeRT_1.width, fireLandscapeRT_1.height), 0, 0);
+
+            texture2.SetPixel(x, y, new Color(0, material, texture2.GetPixel(x, y).b), 1);
+            //FireLandscapeRT[id.xy] = float4(0, materialIndex / 255.0, -0.05 + noiseVLarge * 0.1, 1);
+
+            texture2.Apply();
+           // quad.GetComponent<MeshRenderer>().material.mainTexture = texture;
+
+            RenderTexture.active = null;
+           
+           // GenerateLandscape();
+            
+            //FireSimulationCSHelper.Run_GenerateLandscape(FireSimulationShader, fireLandscapeRT_0, randomSeed, TrueZoom);
+           // FireSimulationCSHelper.Run_GenerateLandscape(FireSimulationShader, fireLandscapeRT_1, randomSeed, TrueZoom);
+           // FireSimulationCSHelper.Run_RasteriseFireSimulation(FireSimulationShader, fireLandscapeRT_0, fireRasterisedRT, fireCellMaterials);
+
         }
     }
 }
