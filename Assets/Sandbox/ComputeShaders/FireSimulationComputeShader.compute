@@ -20,10 +20,11 @@
 //
 
 #pragma kernel CS_GenerateLandscape
-//#pragma kernel CS_DrawLandscape
 #pragma kernel CS_StartFire
+#pragma kernel CS_StartDrawing
 #pragma kernel CS_StepFireSimulation
 #pragma kernel CS_RasteriseFireSimulation
+#pragma kernel CS_RasteriseDrawingSimulation
 #pragma kernel CS_ResetLandscape
 #pragma kernel CS_StartAnnotation
 
@@ -134,6 +135,34 @@ void CS_RasteriseFireSimulation (uint3 id : SV_DispatchThreadID)
     } else {
 		FireRasterisedRT[id.xy] = fireCellMat.Colour;
 	}
+}
+
+
+
+[numthreads(16, 16, 1)]
+void CS_RasteriseDrawingSimulation(uint3 id : SV_DispatchThreadID)
+{
+    float4 fireCell = FireLandscapeRT[id.xy];
+    uint materialIndex = fireCell.g * 255.0;
+    materialIndex = materialIndex < TotalFireCellMaterials ? materialIndex : 0;
+    FireCellMaterial fireCellMat = FireCellMaterialsBuffer[materialIndex];
+
+    if (fireCell.a <= 0)
+    {
+        FireRasterisedRT[id.xy] = fireCellMat.BurntColour;
+    }
+    else if (fireCell.r > 0.8)
+    {
+        FireRasterisedRT[id.xy] = float4(fireCell.r, 0.2, 0, 1);
+    }
+    else if (fireCell.r > 0)
+    {
+        FireRasterisedRT[id.xy] = float4(0.5f + fireCell.r / 0.1, 0.5f + fireCell.r / 0.1, 0, 1);
+    }
+    else
+    {
+        FireRasterisedRT[id.xy] = fireCellMat.Colour;
+    }
 }
 
 // Step Fire Simulation compute shader
@@ -343,8 +372,7 @@ int TotalFireStartPoints;
 [numthreads(16,16,1)]
 void CS_StartFire (uint3 id : SV_DispatchThreadID)
 {
-	float4 fireCell = FireLandscapeRT[id.xy];
-
+	float4 fireCell = FireLandscapeRT[id.xy];    
 	for (int i = 0; i < TotalFireStartPoints; i++) {
 		FireStartPoint firePoint = FireStartPointBuffer[i];
 		float xDelta = firePoint.Position.x - (int)id.x;
@@ -352,11 +380,36 @@ void CS_StartFire (uint3 id : SV_DispatchThreadID)
 		float dist = sqrt(xDelta*xDelta + yDelta*yDelta);
 		if (dist <= firePoint.Radius) {
 			float burningValue = 1;
-			FireLandscapeRT[id.xy] = float4(burningValue, fireCell.g, 0, 1.0);
+			FireLandscapeRT[id.xy] = float4(1, fireCell.g, 0, 1.0);
 		}
 	}
 }
+struct DrawingStartPoint
+{
+    int2 Position;
+    int Radius;
+};
 
+// Inputs
+StructuredBuffer<DrawingStartPoint> DrawingStartPointBuffer;
+int TotalDrawingStartPoints;
+int drawingMaterialIndex = 0;
+[numthreads(16, 16, 1)]
+void CS_StartDrawing(uint3 id : SV_DispatchThreadID)
+{
+    float4 drawCell = FireLandscapeRT[id.xy];     
+    for (int i = 0; i < TotalDrawingStartPoints; i++)
+    {
+        DrawingStartPoint drawPoint = DrawingStartPointBuffer[i];
+        float xDelta = drawPoint.Position.x - (int) id.x;
+        float yDelta = drawPoint.Position.y - (int) id.y;
+        float dist = sqrt(xDelta * xDelta + yDelta * yDelta);
+        if (dist <= drawPoint.Radius)
+        {            
+            FireLandscapeRT[id.xy] = float4(0, drawingMaterialIndex / 255.0, 0, 1.0);
+        }
+    }
+}
 
 // Start Fire compute shader ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // Structs
@@ -386,6 +439,7 @@ void CS_StartAnnotation(uint3 id : SV_DispatchThreadID)
 		}
 	}
 }
+
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 // Fill Rendertexture compute shader
@@ -417,7 +471,7 @@ void CS_GenerateLandscape (uint3 id : SV_DispatchThreadID)
 	simplexNoise = (1 + simplexNoise) / 2.0;
     int materialIndex;
 	materialIndex = 3 - floor(simplexNoise * 4);	
-    float4 fireCell = FireLandscapeRT[id.xy];    
+       
 	FireLandscapeRT[id.xy] = float4(0, materialIndex/255.0, -0.05 + noiseVLarge * 0.1, 1);
 }
 // Reset Landscape compute shader
